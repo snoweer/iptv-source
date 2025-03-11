@@ -15,6 +15,7 @@ import pytz
 import requests
 from bs4 import BeautifulSoup
 from flask import send_file, make_response
+from opencc import OpenCC
 
 import utils.constants as constants
 from utils.config import config
@@ -161,14 +162,15 @@ def get_total_urls(info_list: list[ChannelData], ipv_type_prefer, origin_type_pr
     categorized_urls = {origin: {ipv_type: [] for ipv_type in ipv_type_prefer} for origin in origin_type_prefer}
     total_urls = []
     for info in info_list:
-        url, origin, resolution, url_ipv_type = info["url"], info["origin"], info["resolution"], info["ipv_type"]
+        channel_id, url, origin, resolution, url_ipv_type = info["id"], info["url"], info["origin"], info["resolution"], \
+            info["ipv_type"]
         if not origin:
             continue
 
         if origin == "whitelist":
             w_url, _, w_info = url.partition("$")
             w_info_value = w_info.partition("!")[2] or "白名单"
-            total_urls.append(add_url_info(w_url, w_info_value))
+            total_urls.append({"id": channel_id, "url": add_url_info(w_url, w_info_value), "ipv_type": url_ipv_type})
             continue
 
         if origin == "subscribe" and "/rtp/" in url:
@@ -194,9 +196,9 @@ def get_total_urls(info_list: list[ChannelData], ipv_type_prefer, origin_type_pr
 
         if ipv_prefer_bool:
             if url_ipv_type in ipv_type_prefer:
-                categorized_urls[origin][url_ipv_type].append(url)
+                categorized_urls[origin][url_ipv_type].append({"id": channel_id, "url": url, "ipv_type": url_ipv_type})
         else:
-            categorized_urls[origin]["all"].append(url)
+            categorized_urls[origin]["all"].append({"id": channel_id, "url": url, "ipv_type": url_ipv_type})
 
     ipv_num = {ipv_type: 0 for ipv_type in ipv_type_prefer}
     urls_limit = config.urls_limit
@@ -222,12 +224,12 @@ def get_total_urls(info_list: list[ChannelData], ipv_type_prefer, origin_type_pr
             else:
                 continue
 
-    total_urls = list(dict.fromkeys(total_urls))[:urls_limit]
+    total_urls = total_urls[:urls_limit]
 
     if not config.open_url_info:
-        return [url.partition("$")[0] for url in total_urls]
-    else:
-        return total_urls
+        for item in total_urls:
+            item["url"] = item["url"].partition("$")[0]
+    return total_urls
 
 
 def get_total_urls_from_sorted_data(data):
@@ -342,14 +344,13 @@ def get_ip_address():
         return f"http://{ip}:{config.app_port}"
 
 
-def convert_to_m3u(first_channel_name=None):
+def convert_to_m3u(path=None, first_channel_name=None):
     """
     Convert result txt to m3u format
     """
-    user_final_file = resource_path(config.final_file)
-    if os.path.exists(user_final_file):
-        with open(user_final_file, "r", encoding="utf-8") as file:
-            m3u_output = '#EXTM3U x-tvg-url="https://raw.githubusercontent.com/fanmingming/live/main/e.xml"\n'
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as file:
+            m3u_output = f'#EXTM3U x-tvg-url="{join_url(config.cdn_url, 'https://raw.githubusercontent.com/fanmingming/live/main/e.xml')}"\n'
             current_group = None
             for line in file:
                 trimmed_line = line.strip()
@@ -369,30 +370,29 @@ def convert_to_m3u(first_channel_name=None):
                                       + ("+" if m.group(3) else ""),
                             first_channel_name if current_group == "🕘️更新时间" else original_channel_name,
                         )
-                        m3u_output += f'#EXTINF:-1 tvg-name="{processed_channel_name}" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/{processed_channel_name}.png"'
+                        m3u_output += f'#EXTINF:-1 tvg-name="{processed_channel_name}" tvg-logo="{join_url(config.cdn_url, f'https://raw.githubusercontent.com/fanmingming/live/main/tv/{processed_channel_name}.png')}"'
                         if current_group:
                             m3u_output += f' group-title="{current_group}"'
                         m3u_output += f",{original_channel_name}\n{channel_link}\n"
-            m3u_file_path = os.path.splitext(user_final_file)[0] + ".m3u"
+            m3u_file_path = os.path.splitext(path)[0] + ".m3u"
             with open(m3u_file_path, "w", encoding="utf-8") as m3u_file:
                 m3u_file.write(m3u_output)
-            print(f"✅ M3U result file generated at: {m3u_file_path}")
+            # print(f"✅ M3U result file generated at: {m3u_file_path}")
 
 
-def get_result_file_content(show_content=False, file_type=None):
+def get_result_file_content(path=None, show_content=False, file_type=None):
     """
     Get the content of the result file
     """
-    user_final_file = resource_path(config.final_file)
     result_file = (
-        os.path.splitext(user_final_file)[0] + f".{file_type}"
+        os.path.splitext(path)[0] + f".{file_type}"
         if file_type
-        else user_final_file
+        else path
     )
     if os.path.exists(result_file):
         if config.open_m3u_result:
             if file_type == "m3u" or not file_type:
-                result_file = os.path.splitext(user_final_file)[0] + ".m3u"
+                result_file = os.path.splitext(path)[0] + ".m3u"
             if file_type != "txt" and show_content == False:
                 return send_file(result_file, as_attachment=True)
         with open(result_file, "r", encoding="utf-8") as file:
@@ -404,22 +404,18 @@ def get_result_file_content(show_content=False, file_type=None):
     return response
 
 
-def remove_duplicates_from_list(data_list, seen, flag=None, force_str=None):
+def remove_duplicates_from_list(data_list, seen, force_str=None):
     """
     Remove duplicates from data list
     """
     unique_list = []
     for item in data_list:
         item_first = item["url"]
-        part = item_first
+        part = item["host"]
         if force_str:
             info = item_first.partition("$")[2]
             if info and info.startswith(force_str):
                 continue
-        if flag:
-            matcher = re.search(flag, item_first)
-            if matcher:
-                part = matcher.group(1)
         seen_num = seen.get(part, 0)
         if (seen_num < config.sort_duplicate_limit) or (seen_num == 0 and config.sort_duplicate_limit == 0):
             seen[part] = seen_num + 1
@@ -427,15 +423,15 @@ def remove_duplicates_from_list(data_list, seen, flag=None, force_str=None):
     return unique_list
 
 
-def process_nested_dict(data, seen, flag=None, force_str=None):
+def process_nested_dict(data, seen, force_str=None):
     """
     Process nested dict
     """
     for key, value in data.items():
         if isinstance(value, dict):
-            process_nested_dict(value, seen, flag, force_str)
+            process_nested_dict(value, seen, force_str)
         elif isinstance(value, list):
-            data[key] = remove_duplicates_from_list(value, seen, flag, force_str)
+            data[key] = remove_duplicates_from_list(value, seen, force_str)
 
 
 def get_url_host(url):
@@ -509,6 +505,20 @@ def write_content_into_txt(content, path=None, position=None, callback=None):
         callback()
 
 
+def format_name(name: str) -> str:
+    """
+    Format the  name with sub and replace and lower
+    """
+    cc = OpenCC("t2s")
+    name = cc.convert(name)
+    for region in constants.region_list:
+        name = name.replace(f"{region}｜", "")
+    name = constants.sub_pattern.sub("", name)
+    for old, new in constants.replace_dict.items():
+        name = name.replace(old, new)
+    return name.lower()
+
+
 def get_name_url(content, pattern, check_url=True):
     """
     Get name and url from content
@@ -550,7 +560,7 @@ def get_urls_from_file(path: str) -> list:
     return urls
 
 
-def get_name_urls_from_file(path: str) -> dict[str, list]:
+def get_name_urls_from_file(path: str, format_name_flag: bool = False) -> dict[str, list]:
     """
     Get the name and urls from file
     """
@@ -564,7 +574,7 @@ def get_name_urls_from_file(path: str) -> dict[str, list]:
                     continue
                 name_url = get_name_url(line, pattern=constants.txt_pattern)
                 if name_url and name_url[0]:
-                    name = name_url[0]["name"]
+                    name = format_name(name_url[0]["name"]) if format_name_flag else name_url[0]["name"]
                     url = name_url[0]["url"]
                     if url not in name_urls[name]:
                         name_urls[name].append(url)
@@ -586,3 +596,50 @@ def get_version_info():
     """
     with open(resource_path("version.json"), "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def join_url(url1: str, url2: str) -> str:
+    """
+    Get the join url
+    :param url1: The first url
+    :param url2: The second url
+    :return: The join url
+    """
+    if not url1:
+        return url2
+    if not url2:
+        return url1
+    if not url1.endswith("/"):
+        url1 += "/"
+    return url1 + url2
+
+
+def find_by_id(data: dict, id: int) -> dict:
+    """
+    Find the nested dict by id
+    :param data: target data
+    :param id: target id
+    :return: target dict
+    """
+    if isinstance(data, dict) and 'id' in data and data['id'] == id:
+        return data
+    for key, value in data.items():
+        if isinstance(value, dict):
+            result = find_by_id(value, id)
+            if result is not None:
+                return result
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    result = find_by_id(item, id)
+                    if result is not None:
+                        return result
+    return {}
+
+
+def custom_print(*args, **kwargs):
+    """
+    Custom print
+    """
+    if not custom_print.disable:
+        print(*args, **kwargs)
