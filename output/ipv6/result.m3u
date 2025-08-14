@@ -1,5 +1,5 @@
 #EXTM3U x-tvg-url="https://raw.githubusercontent.com/fanmingming/live/main/e.xml"
-#EXTINF:-1 tvg-name="CCTV1" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/CCTV1.png" group-title="🕘️更新时间",2025-08-14 06:37:03
+#EXTINF:-1 tvg-name="CCTV1" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/CCTV1.png" group-title="🕘️更新时间",2025-08-14 18:35:27
 http://[2409:8087:1:20:20::2c]/otttv.bj.chinamobile.com/PLTV/88888888/224/3221226895/1.m3u8?GuardEncType=2&accountinfo=%7E%7EV2.0%7EI0Rkc6neBYgfpoJ1yud8Fw%7E_eNUbgU9sJGUcVVduOMKhafLvQUgE_zlz_7pvDimJNPpqgHe3PQ5GNQoO-yUgA8C%2CEND
 #EXTINF:-1 tvg-name="CCTV1" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/CCTV1.png" group-title="📺央视频道",CCTV-1
 http://[2409:8087:1:20:20::2c]/otttv.bj.chinamobile.com/PLTV/88888888/224/3221226895/1.m3u8?GuardEncType=2&accountinfo=%7E%7EV2.0%7EI0Rkc6neBYgfpoJ1yud8Fw%7E_eNUbgU9sJGUcVVduOMKhafLvQUgE_zlz_7pvDimJNPpqgHe3PQ5GNQoO-yUgA8C%2CEND
@@ -2263,6 +2263,8 @@ https://lives.jnnews.tv/video/s10001-JNTV3/index.m3u8
 http://l1.weihai.tv:8081/hls/969O76hb22.m3u8
 #EXTINF:-1 tvg-name="青州综合" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/青州综合.png" group-title="☘️山东频道",青州综合
 https://lives.jnnews.tv/video/s10001-JNTV3/index.m3u8
+#EXTINF:-1 tvg-name="青州综合" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/青州综合.png" group-title="☘️山东频道",青州综合
+http://m3u8-channel.lytv.tv/nmip-media/channellive/channel113571/playlist.m3u8
 #EXTINF:-1 tvg-name="济宁公共" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/济宁公共.png" group-title="☘️山东频道",济宁公共
 http://lives.jnnews.tv/video/s10001-JNTV3/index.m3u8?shandd
 #EXTINF:-1 tvg-name="济宁公共" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/济宁公共.png" group-title="☘️山东频道",济宁公共
@@ -2279,6 +2281,8 @@ http://lives.jnnews.tv/video/s10001-JNTV-1/index.m3u8?shandd
 https://lives.jnnews.tv/video/s10001-JNTV-1/index.m3u8
 #EXTINF:-1 tvg-name="威海一套新闻综合" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/威海一套新闻综合.png" group-title="☘️山东频道",威海一套新闻综合
 http://l1.weihai.tv:8081/hls/969O76hb22.m3u8
+#EXTINF:-1 tvg-name="东营综合" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/东营综合.png" group-title="☘️山东频道",东营综合
+https://m3u8-channel.lytv.tv/nmip-media/channellive/channel113571/playlist.m3u8
 #EXTINF:-1 tvg-name="日照公共" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/日照公共.png" group-title="☘️山东频道",日照公共
 http://live.rzw.com.cn/kzpd/sd/live.m3u8?shandd
 #EXTINF:-1 tvg-name="日照新闻综合" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/日照新闻综合.png" group-title="☘️山东频道",日照新闻综合
